@@ -8,15 +8,15 @@ interface IntegrationState {
   
   // Actions
   loadIntegrations: () => Promise<void>;
-  saveApiKey: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek', apiKey: string) => Promise<void>;
-  testConnection: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek') => Promise<boolean>;
-  disableIntegration: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek') => Promise<void>;
-  updateIntegrationStatus: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek', status: 'connected' | 'error' | 'disconnected', errorMessage?: string) => void;
+  saveApiKey: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq', apiKey: string, modelId?: string, modelName?: string) => Promise<void>;
+  testConnection: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq') => Promise<boolean>;
+  disableIntegration: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq') => Promise<void>;
+  updateIntegrationStatus: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq', status: 'connected' | 'error' | 'disconnected', errorMessage?: string) => void;
   
   // Selectors
-  getIntegrationByProvider: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek') => Integration | undefined;
+  getIntegrationByProvider: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq') => Integration | undefined;
   getConnectedModels: () => Promise<CognitiveModel[]>;
-  isProviderConnected: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek') => boolean;
+  isProviderConnected: (provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq') => boolean;
 }
 
 export const useIntegrationStore = create<IntegrationState>((set, get) => ({
@@ -40,7 +40,7 @@ export const useIntegrationStore = create<IntegrationState>((set, get) => ({
     }
   },
 
-  saveApiKey: async (provider, apiKey) => {
+  saveApiKey: async (provider, apiKey, modelId?, modelName?) => {
     try {
       const existing = get().integrations.find(int => int.provider === provider);
       
@@ -53,6 +53,8 @@ export const useIntegrationStore = create<IntegrationState>((set, get) => ({
                   ...int,
                   apiKey: response.apiKey,
                   status: response.status,
+                  modelId: modelId || int.modelId,
+                  modelName: modelName || int.modelName,
                   lastTested: response.lastTested ? new Date(response.lastTested) : undefined,
                   errorMessage: response.errorMessage,
                 }
@@ -60,10 +62,12 @@ export const useIntegrationStore = create<IntegrationState>((set, get) => ({
           ),
         }));
       } else {
-        const response = await integrationApi.create(provider, apiKey);
+        const response = await integrationApi.create(provider, apiKey, modelId, modelName);
         const newIntegration: Integration = {
           ...response,
           userId: response.id,
+          modelId: response.modelId || modelId,
+          modelName: response.modelName || modelName,
           lastTested: response.lastTested ? new Date(response.lastTested) : undefined,
         };
         set(state => ({
@@ -152,7 +156,7 @@ export const useIntegrationStore = create<IntegrationState>((set, get) => ({
       const response = await integrationApi.getAvailableModels();
       return response.models.map(model => ({
         ...model,
-        provider: model.provider as 'openai' | 'anthropic' | 'google' | 'deepseek',
+        provider: model.provider as 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq',
         status: model.status as 'connected' | 'error' | 'disconnected',
       }));
     } catch (error) {

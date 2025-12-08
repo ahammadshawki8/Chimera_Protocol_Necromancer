@@ -365,14 +365,14 @@ export const memoryApi = {
     });
   },
 
-  importFromUrl: async (workspaceId: string, url: string, summarize: boolean = true): Promise<{
+  importFromUrl: async (workspaceId: string, url: string, summarize: boolean = true, mode: 'basic' | 'advanced' = 'basic'): Promise<{
     memory: MemoryResponse;
     source_type: string;
     was_summarized: boolean;
   }> => {
     return apiRequest(`/workspaces/${workspaceId}/memories/import-url`, {
       method: 'POST',
-      body: JSON.stringify({ url, summarize }),
+      body: JSON.stringify({ url, summarize, mode }),
     });
   },
 
@@ -413,7 +413,9 @@ export const memoryApi = {
 
 export interface IntegrationResponse {
   id: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'deepseek';
+  provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq';
+  modelId?: string;
+  modelName?: string;
   apiKey: string;
   status: 'connected' | 'error' | 'disconnected';
   lastTested?: string;
@@ -435,10 +437,10 @@ export const integrationApi = {
     return apiRequest('/integrations');
   },
 
-  create: async (provider: string, apiKey: string): Promise<IntegrationResponse> => {
+  create: async (provider: string, apiKey: string, modelId?: string, modelName?: string): Promise<IntegrationResponse> => {
     return apiRequest('/integrations', {
       method: 'POST',
-      body: JSON.stringify({ provider, apiKey }),
+      body: JSON.stringify({ provider, apiKey, modelId, modelName }),
     });
   },
 

@@ -33,6 +33,7 @@ const MemoryBank: React.FC = () => {
   const [importMode, setImportMode] = useState<'url' | 'file'>('url');
   const [importUrl, setImportUrl] = useState('');
   const [shouldSummarize, setShouldSummarize] = useState(true);
+  const [scrapeMode, setScrapeMode] = useState<'basic' | 'advanced'>('basic');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
@@ -73,7 +74,7 @@ const MemoryBank: React.FC = () => {
     setImportSuccess(null);
     
     try {
-      const result = await memoryApi.importFromUrl(currentWorkspaceId, importUrl.trim(), shouldSummarize);
+      const result = await memoryApi.importFromUrl(currentWorkspaceId, importUrl.trim(), shouldSummarize, scrapeMode);
       
       // Refresh memories list
       await loadMemories(currentWorkspaceId);
@@ -167,18 +168,18 @@ const MemoryBank: React.FC = () => {
           <div className="flex gap-3">
             <CyberButton
               variant="secondary"
-              onClick={() => { setImportMode('file'); setShowImportModal(true); }}
-            >
-              <FileUp size={18} className="mr-2" />
-              Import File
-            </CyberButton>
-            <CyberButton
-              variant="primary"
-              glow
               onClick={() => { setImportMode('url'); setShowImportModal(true); }}
             >
               <Link2 size={18} className="mr-2" />
               Import URL
+            </CyberButton>
+            <CyberButton
+              variant="primary"
+              glow
+              onClick={() => { setImportMode('file'); setShowImportModal(true); }}
+            >
+              <FileUp size={18} className="mr-2" />
+              Import File
             </CyberButton>
           </div>
         </div>
@@ -349,6 +350,46 @@ const MemoryBank: React.FC = () => {
                           <label htmlFor="summarize-url" className="text-gray-400 text-sm">
                             Summarize content (recommended for long pages)
                           </label>
+                        </div>
+
+                        {/* Scrape Mode Selector */}
+                        <div>
+                          <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wider">
+                            Scrape Mode
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setScrapeMode('basic')}
+                              disabled={isImporting}
+                              className={`flex-1 py-2 px-3 text-xs font-mono border-2 transition-all duration-300 angular-frame ${
+                                scrapeMode === 'basic'
+                                  ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                                  : 'border-deep-teal text-gray-400 hover:border-gray-500'
+                              }`}
+                            >
+                              Basic
+                              <span className="block text-[10px] mt-0.5 opacity-70">Fast & Lightweight</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setScrapeMode('advanced')}
+                              disabled={isImporting}
+                              className={`flex-1 py-2 px-3 text-xs font-mono border-2 transition-all duration-300 angular-frame ${
+                                scrapeMode === 'advanced'
+                                  ? 'border-neon-green bg-neon-green/10 text-neon-green'
+                                  : 'border-deep-teal text-gray-400 hover:border-gray-500'
+                              }`}
+                            >
+                              Advanced
+                              <span className="block text-[10px] mt-0.5 opacity-70">JS-heavy sites</span>
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-gray-600 mt-1">
+                            {scrapeMode === 'basic' 
+                              ? 'Uses requests + BeautifulSoup. Works for most static sites.'
+                              : 'Uses Playwright browser. Required for JS-rendered content. Needs premium server.'}
+                          </p>
                         </div>
 
                         <div className="text-xs text-gray-500 space-y-1">

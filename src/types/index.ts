@@ -77,7 +77,7 @@ export interface Message {
 // Cognitive Model Types
 export interface CognitiveModel {
   id: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'deepseek';
+  provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq';
   name: string;
   displayName: string;
   brainRegion: string; // e.g., "Left Cortex", "Right Cortex"
@@ -106,7 +106,9 @@ export interface TeamMember {
 export interface Integration {
   id: string;
   userId: string;
-  provider: 'openai' | 'anthropic' | 'google' | 'deepseek';
+  provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq';
+  modelId?: string;
+  modelName?: string;
   apiKey: string;
   status: 'connected' | 'error' | 'disconnected';
   lastTested?: Date;

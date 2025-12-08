@@ -6,7 +6,7 @@ import { CyberInput } from '../components/ui/CyberInput';
 import { Brain, CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
 
 interface IntegrationPanelProps {
-  provider: 'openai' | 'anthropic' | 'google' | 'deepseek';
+  provider: 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq';
   title: string;
   subtitle: string;
   brainRegion: string;
@@ -239,31 +239,32 @@ const AddIntegrationModal: React.FC<AddIntegrationModalProps> = ({ onClose }) =>
   // Supported models grouped by provider
   const supportedModels: Record<string, { id: string; name: string }[]> = {
     openai: [
+      { id: 'gpt-4o', name: 'GPT-4o' },
       { id: 'gpt-4', name: 'GPT-4' },
       { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
-      { id: 'gpt-4o', name: 'GPT-4o' },
       { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
     ],
     anthropic: [
+      { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
       { id: 'claude-3-opus', name: 'Claude 3 Opus' },
       { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet' },
       { id: 'claude-3-haiku', name: 'Claude 3 Haiku' },
-      { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
     ],
     google: [
-      { id: 'gemini-pro', name: 'Gemini Pro' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+      { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Exp' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
     ],
     deepseek: [
       { id: 'deepseek-chat', name: 'DeepSeek Chat' },
       { id: 'deepseek-coder', name: 'DeepSeek Coder' },
     ],
     groq: [
-      { id: 'llama-3-70b', name: 'Llama 3 70B' },
-      { id: 'llama-3-8b', name: 'Llama 3 8B' },
-      { id: 'mixtral-8x7b', name: 'Mixtral 8x7B' },
+      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B' },
+      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B' },
+      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
+      { id: 'gemma2-9b-it', name: 'Gemma 2 9B' },
     ],
   };
 
@@ -296,7 +297,9 @@ const AddIntegrationModal: React.FC<AddIntegrationModalProps> = ({ onClose }) =>
     setError('');
 
     try {
-      await saveApiKey(provider as 'openai' | 'anthropic' | 'google' | 'deepseek', apiKey);
+      const selectedModel = availableModels.find(m => m.id === modelId);
+      const modelName = selectedModel?.name || modelId;
+      await saveApiKey(provider as 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq', apiKey, modelId, modelName);
       await loadIntegrations();
       onClose();
     } catch (err) {
@@ -412,28 +415,21 @@ const Integrations: React.FC = () => {
     loadIntegrations();
   }, [loadIntegrations]);
 
-  // Provider metadata
-  const providerMetadata: Record<string, { title: string; subtitle: string; brainRegion: string }> = {
-    openai: {
-      title: 'GPT-4o',
-      subtitle: 'OpenAI Language Model',
-      brainRegion: 'Left Cortex',
-    },
-    anthropic: {
-      title: 'Claude 3.5',
-      subtitle: 'Anthropic Language Model',
-      brainRegion: 'Right Cortex',
-    },
-    google: {
-      title: 'Gemini 2.0',
-      subtitle: 'Google Language Model',
-      brainRegion: 'Occipital',
-    },
-    deepseek: {
-      title: 'DeepSeek',
-      subtitle: 'DeepSeek Language Model',
-      brainRegion: 'Frontal Lobe',
-    },
+  // Provider display names and brain regions
+  const providerDisplayNames: Record<string, string> = {
+    openai: 'OpenAI',
+    anthropic: 'Anthropic',
+    google: 'Google',
+    deepseek: 'DeepSeek',
+    groq: 'Groq',
+  };
+
+  const providerBrainRegions: Record<string, string> = {
+    openai: 'Left Cortex',
+    anthropic: 'Right Cortex',
+    google: 'Occipital',
+    deepseek: 'Frontal Lobe',
+    groq: 'Cerebellum',
   };
 
   return (
@@ -461,19 +457,18 @@ const Integrations: React.FC = () => {
         {integrations.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {integrations.map((integration) => {
-              const metadata = providerMetadata[integration.provider] || {
-                title: integration.provider.toUpperCase(),
-                subtitle: 'Language Model',
-                brainRegion: 'Unknown',
-              };
+              const providerName = providerDisplayNames[integration.provider] || 
+                integration.provider.charAt(0).toUpperCase() + integration.provider.slice(1);
+              const brainRegion = providerBrainRegions[integration.provider] || 'Neural Cortex';
+              const modelTitle = integration.modelName || integration.modelId || providerName;
               
               return (
                 <IntegrationPanel
                   key={integration.id}
-                  provider={integration.provider as 'openai' | 'anthropic' | 'google' | 'deepseek'}
-                  title={metadata.title}
-                  subtitle={metadata.subtitle}
-                  brainRegion={metadata.brainRegion}
+                  provider={integration.provider as 'openai' | 'anthropic' | 'google' | 'deepseek' | 'groq'}
+                  title={modelTitle}
+                  subtitle={providerName}
+                  brainRegion={brainRegion}
                 />
               );
             })}
